@@ -29,5 +29,3 @@ class ChartInk:
             data = s.post(url, headers=header, data=conditions).json()
             scan = pd.DataFrame(data["data"])
             return scan
-
-    
