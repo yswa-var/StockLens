@@ -3,3 +3,4 @@ pandas
 lxml
 beautifulsoup4
 numpy
+plotly
