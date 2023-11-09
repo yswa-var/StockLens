@@ -10,7 +10,7 @@ import warnings
 import time
 import numpy as np
 today_date = datetime.today().strftime('%d-%m-%Y')
-
+np.seterr(divide='ignore', invalid='ignore')
 
 def download_link(df, filename, text):
     csv = df.to_csv(index=False)
@@ -59,49 +59,54 @@ def process_button_click(value):
     return df
 
 
-class ChartInk:
-    """A class for interacting with the ChartInk screener."""
+def chartink_eng(cond=None):
+    url="https://chartink.com/screener/process"
 
-    def get_stocks(cond=None):
-        url="https://chartink.com/screener/process"
-        """Retrieves stocks that match the given conditions.
+    if cond is None:
+        return
 
-        Args:
-            cond: A string containing the scan clause.
+    conditions = {"scan_clause": cond}
 
-        Returns:
-            A Pandas DataFrame containing the stocks that match the conditions.
-        """
-
-        if cond is None:
-            return
-
-        conditions = {"scan_clause": cond}
-
-        with requests.session() as s:
-            r_data = s.get(url)
-            soup = bs(r_data.content, "lxml")
-            meta = soup.find_all("meta", {"name": "csrf-token"})[0]["content"]
-            header = {"x-csrf-token": meta}
-            data = s.post(url, headers=header, data=conditions).json()
-            scan = pd.DataFrame(data["data"])
-            return scan
+    with requests.session() as s:
+        r_data = s.get(url)
+        soup = bs(r_data.content, "lxml")
+        meta = soup.find_all("meta", {"name": "csrf-token"})[0]["content"]
+        header = {"x-csrf-token": meta}
+        data = s.post(url, headers=header, data=conditions).json()
+        scan = pd.DataFrame(data["data"])
+        return scan
 
 def get_stocks():
     #short term
     cond = "( {cash} ( latest ema ( latest close , 21 ) >= latest ema ( latest close , 50 ) and latest ema ( close,10 ) / latest ema ( close,21 ) <= 1.03 and latest ema ( close,10 ) / latest ema ( close,21 ) > 1 and latest ema ( close,21 ) / latest ema ( close,30 ) <= 1.03 and latest ema ( close,21 ) / latest ema ( close,30 ) > 1 and latest ema ( close,30 ) / latest ema ( close,50 ) <= 1.03 and latest ema ( close,30 ) / latest ema ( close,50 ) > 1 and latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 and latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and latest close > 30 and market cap >= 300 and latest ema ( latest close , 10 ) > latest ema ( latest close , 21 ) and latest ema ( latest close , 21 ) > latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) > latest ema ( latest close , 100 ) and latest close > latest ema ( latest close , 50 ) and quarterly indian public percentage <= 1 quarter ago indian public percentage and 1 quarter ago indian public percentage <= 2 quarter ago indian public percentage and 2 quarter ago indian public percentage <= 3 quarter ago indian public percentage and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) ) ) "
-    df = pd.DataFrame(ChartInk.get_stocks(cond=cond))['nsecode']
-    df.to_csv("short_term.csv")
+    df1 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
 
     #mid
     cond = "( {cash} ( weekly ema ( weekly close , 21 ) >= weekly ema ( weekly close , 50 ) and weekly ema ( close,10 ) / weekly ema ( close,21 ) <= 1.03 and weekly ema ( close,10 ) / weekly ema ( close,21 ) > 1 and weekly ema ( close,21 ) / weekly ema ( close,30 ) <= 1.03 and weekly ema ( close,21 ) / weekly ema ( close,30 ) > 1 and weekly ema ( close,30 ) / weekly ema ( close,50 ) <= 1.03 and weekly ema ( close,30 ) / weekly ema ( close,50 ) > 1 and latest close > 30 and latest sma ( latest volume , 50 ) > 3000 and market cap >= 300 and latest close > 30 and weekly ema ( weekly close , 10 ) > weekly ema ( weekly close , 21 ) and weekly ema ( weekly close , 21 ) > weekly ema ( weekly close , 50 ) and weekly ema ( weekly close , 50 ) > weekly ema ( weekly close , 100 ) and weekly close > weekly ema ( weekly close , 50 ) and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) and latest volume > latest sma ( latest volume , 20 ) and quarterly indian public percentage <= 1 quarter ago indian public percentage and 1 quarter ago indian public percentage <= 2 quarter ago indian public percentage and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) ) ) "
-    df = pd.DataFrame(ChartInk.get_stocks(cond=cond))['nsecode']
-    df.to_csv("mid_term.csv")
+    df2 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
 
     #weekly
     cond = "( {cash} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) and ( {cash} ( latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 ) ) and ( {cash} ( latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and market cap >= 300 and latest close > 30 ) ) and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) ) ) "
-    df = pd.DataFrame(ChartInk.get_stocks(cond=cond))['nsecode']
-    df.to_csv("long_term.csv")
+    df3 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
+    # Convert Series to DataFrame
+    df1 = df1.to_frame()
+    df2 = df2.to_frame()
+    df3 = df3.to_frame()
+
+    # Reset index to make the current index a column and create a proper index
+    df1.reset_index(drop=True, inplace=True)
+    df2.reset_index(drop=True, inplace=True)
+    df3.reset_index(drop=True, inplace=True)
+
+    # Add 'Cat' column
+    df1['Cat'] = "S"
+    df2['Cat'] = "M"
+    df3['Cat'] = "L"
+
+    # Concatenate DataFrames vertically
+    df = pd.concat([df1, df2, df3], axis=0)
+
+    return df
 
 def get_shareholding(x):
     url = "https://www.screener.in/company/" + x +"/"
@@ -161,31 +166,29 @@ def HoldingScore(ticker):
         print(e)
         return 0, 0
         
-def csv_caller(x):
-    of = pd.read_csv(x)
-    of = of.drop(columns=['Unnamed: 0'])
-    of["Holding score"] = 0
-    of['Holding no'] = 0
-    k = 0
-    for i in of['nsecode']:
+def csv_caller(df):
+    df["Holding score"] = 0
+    df['Holding no'] = 0
+    k = 0 
+    progress_bar = st.progress(0)
+    for i in df['nsecode']:
         Score, holding = HoldingScore(i)
-        of['Holding score'][k] = Score
-        of['Holding no'][k] = holding
+        # Convert the 'Holding score' and 'Holding no' columns to float data type
+        df['Holding score'] = df['Holding score'].astype(float)
+        df['Holding no'] = df['Holding no'].astype(float)
+
+        # Now you can assign the floating-point values without warnings
+        df.loc[k, 'Holding score'] = Score  # Assuming Score is a float
+        df.loc[k, 'Holding no'] = holding   # Assuming holding is a float
+
         k+=1
-    of.fillna(0.0, inplace=True)
-    return of
+        progress_bar.progress(k)
+    df.fillna(0.0, inplace=True)
+    return df
 
-get_stocks()
-mid_ga = csv_caller("long_term.csv")
-short_ga = csv_caller("short_term.csv")
-long_ga = csv_caller("mid_term.csv")
-mid_ga['cat'] = "M"
-short_ga['cat'] = "S"
-long_ga['cat'] = "L"
-df = pd.concat([mid_ga, short_ga, long_ga], axis=0)
-
+df = get_stocks()
 st.title('HotChick Stocks')
-
+df = csv_caller(df)
 # Buttons for downloading CSV and Excel
 st.write(df)
 st.sidebar.header('Download as:')
