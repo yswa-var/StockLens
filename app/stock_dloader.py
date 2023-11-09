@@ -13,6 +13,22 @@ import numpy as np
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
 
+def format_nse_codes(codes):
+    """
+    This function takes a list of NSE codes and returns a string formatted with today's date
+    and the codes prefixed with 'NSE:'.
+    """
+    # Get today's date in the format '9 Nov 2023'
+    today_date = datetime.now().strftime("%d %b %Y").lstrip("0")
+
+    # Convert the list of NSE codes to the desired format
+    formatted_codes = ", ".join([f"NSE:{code}" for code in codes])
+
+    # Combine the date and formatted NSE codes
+    formatted_string = f"### {today_date}, {formatted_codes}"
+    
+    return formatted_string
+
 def download_link(df, filename, text):
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding
@@ -146,15 +162,27 @@ def get_stocks():
     
     return df
  
+# Define a function to refresh the data
+def refresh_data():
+    st.write("Refreshing data...")
+    df = get_stocks()
+    return df
 
-
+# Initial data retrieval
 df = get_stocks()
+
+# Button to trigger data refresh
+if st.button('Refresh Data'):
+    df = refresh_data()
+
 st.title('HotChick Stocks')
 
-# Buttons for downloading CSV and Excel
-st.write(df)
+c1, c2 = st.columns([1, 2])
+c1.write(df)
+tradingview = format_nse_codes(df['nsecode'])
+c2.code(tradingview)
 
-
+# Rest of your code...
 st.sidebar.header('Download as:')
 if st.sidebar.button('CSV'):
     download_csv()
@@ -170,3 +198,6 @@ for value in unique_values:
     if st.sidebar.button(button_label):
         result = process_button_click(value)
         st.write(result)
+
+
+
