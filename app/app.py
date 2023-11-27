@@ -9,9 +9,11 @@ import pandas as pd
 import warnings
 import time
 import numpy as np
+from PIL import Image
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
-
+image = Image.open('image.jpg')
+st.image(image)
 def download_link(df, filename, text):
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding
