@@ -12,23 +12,9 @@ import numpy as np
 from PIL import Image
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
-import requests
-from io import BytesIO
-
-# Define the raw image URL from GitHub
-image_url = 'https://github.com/bbmusa/StockLens/blob/main/app/image.jpg'
-
-# Fetch the image from the URL
-response = requests.get(image_url)
-
-# Check if the request was successful (status code 200)
-if response.status_code == 200:
-    # Open the image using Pillow (PIL)
-    image = Image.open(BytesIO(response.content))
-    # Display the image in Streamlit
-    st.image(image, caption='🪖', use_column_width=True)
-else:
-    top_g=89
+image = "https://raw.githubusercontent.com/bbmusa/StockLens/main/app/image.jpg"
+# Display the image in Streamlit
+st.image(image, caption='🪖', use_column_width=True)
 def download_link(df, filename, text):
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding
