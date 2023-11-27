@@ -1,44 +1,18 @@
-import streamlit as st
-import base64
 from datetime import datetime
-import io
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
-import warnings
+import plotly.express as px
 import time
 import numpy as np
-from PIL import Image
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
-image = Image.open('image.jpg')
-st.image(image)
-def download_link(df, filename, text):
-    csv = df.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding
-    href = f'<a href="data:file/csv;base64,{b64}" download="{filename}.csv">{text}</a>'
-    return href
 
-# Display DataFrame in the sidebar
-def download_csv():
-    csv = df.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="data.csv">Download CSV file</a>'
-    st.markdown(href, unsafe_allow_html=True)
-
-# Function to download as Excel
-def download_excel():
-    excel_buffer = io.BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Sheet1', index=False)
-    excel_data = excel_buffer.getvalue()
-    b64 = base64.b64encode(excel_data).decode()
-    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="data.xlsx">Download Excel file</a>'
-    st.markdown(href, unsafe_allow_html=True)
 
 def process_button_click(value):
     url = "https://www.screener.in/company/" + value +"/"
+
     response = requests.get(url)
 
     soup = bs(response.content, "html.parser")
@@ -57,7 +31,41 @@ def process_button_click(value):
     df = df.drop(columns=[0])
     df.columns = df.iloc[0]
     df = df.iloc[1:]
+    # Define a dictionary to map the starting strings to the new names
+    rename_dict = {
+        'Pro': 'Promoter',
+        'FII': 'FII',
+        'DII': 'DII',
+        'Gov': 'Government',
+        'Oth': 'Others',
+        'Pub': 'Public'
+    }
 
+    # Function to apply the renaming logic
+    def rename_columns(col_name):
+        for key, value in rename_dict.items():
+            if col_name.startswith(key):
+                return value
+        return col_name  # Return the original name if no match is found
+
+    # Rename the columns using the function
+    df.columns = [rename_columns(col) for col in df.columns]
+    df['Promoter'] = df['Promoter'].str.replace('%', '').astype(float)
+    df['FII'] = df['FII'].str.replace('%', '').astype(float)
+    df['DII'] = df['DII'].str.replace('%', '').astype(float)
+    df['Public'] = df['Public'].str.replace('%', '').astype(float)
+
+    df['Public % Change'] = df['Public'].pct_change() * 100
+    df['FII % Change'] = df['FII'].pct_change() * 100
+    df['DII % Change'] = df['DII'].pct_change() * 100
+    df['Promoter % Change'] = df['Promoter'].pct_change() * 100
+
+    # The first row will have NaN values because there is no previous row to compare with
+    # You may want to fill NaN values with 0 or leave them as is, depending on your requirement
+    df.fillna(0, inplace=True)
+    score = (df['Promoter % Change']+df['DII % Change']+df['FII % Change'])-df['Public % Change']
+
+    df["Score"] =  score
     return df
 
 
@@ -107,103 +115,29 @@ def get_stocks():
 
     # Concatenate DataFrames vertically
     df = pd.concat([df1, df2, df3], axis=0)
-
+    
     return df
 
-def get_shareholding(x):
-    url = "https://www.screener.in/company/" + x +"/"
-    response = requests.get(url)
-
-    soup = bs(response.content, "html.parser")
-
-    quarterly_shp_section = soup.find('div', {'id': 'quarterly-shp'})
-
-    shareholding_table = quarterly_shp_section.find('table', {'class': 'data-table'})
-    shareholding_data = []
-    for row in shareholding_table.find_all('tr'):
-        cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
-        shareholding_data.append(cols)
-
-    df = pd.DataFrame(shareholding_data)
-    time.sleep(4)
-    return df
-
-
-def HoldingScore(ticker):
-    try:
-        df = get_shareholding(ticker)
-        if len(df[0].to_numpy()) == 6:
-            df[0] = ["x","Promoter", "FII", "DII", "Retail","Share Holders"]
-        if len(df[0].to_numpy()) == 7:
-            df[0] = ["x","Promoter", "FII", "DII","Gov", "Retail","Share Holders"]
-        if len(df[0].to_numpy()) == 8:
-            df[0] = ["x","Promoter", "FII", "DII","Gov", "Retail","other","Share Holders"]
-        if len(df[0].to_numpy()) > 8:
-            df[0] = ["x","Promoter", "FII", "DII","Gov", "Retail","other","Share Holders",'xx']
-        
-        df = df.transpose()
-
-        df = df.drop(columns=[0])
-        df.columns = df.iloc[0]
-        df = df.iloc[1:]
-
-        df.drop([1, 2, 3, 4, 5, 6, 7, 8], inplace=True)
-        # Convert percentage strings to float
-        df['Promoter'] = df['Promoter'].str.rstrip('%').astype(float)
-        df['FII'] = df['FII'].str.rstrip('%').astype(float)
-        df['DII'] = df['DII'].str.rstrip('%').astype(float)
-        df['Retail'] = df['Retail'].str.rstrip('%').astype(float)
+def Holding_Looper(df):
+    df['Score'] = 0
+    i=0
+    for stocks in df['nsecode']:
         try:
-            df['Gov'] = df['Gov'].str.rstrip('%').astype(float)
+            gf = process_button_click(stocks)
+            last_score = round(gf['Score'].iloc[-1],2)
+            print(f'{i}: {stocks} {last_score}')
         except:
-            pass
-        # Remove commas and convert 'share holders' to int
-        df['Share Holders'] = df['Share Holders'].str.replace(',', '').astype(int)
-        score = round((np.diff(df['FII'].to_numpy()) / df['FII'].to_numpy()[:-1]).sum() + (np.diff(df['DII'].to_numpy()) / df['DII'].to_numpy()[:-1]).sum() + (np.diff(df['Promoter'].to_numpy()) / df['Promoter'].to_numpy()[:-1]).sum() - (np.diff(df['Retail'].to_numpy()) / df['Retail'].to_numpy()[:-1]).sum(),5)
-        holding = round(-(np.diff(df['Share Holders'].to_numpy()) / df['Share Holders'].to_numpy()[:-1]).sum(),3)
-        return score, holding
-    except Exception as e:
-        print('error '+ticker)
-        print(e)
-        return 0, 0
-        
-def csv_caller(df):
-    df["Holding score"] = 0
-    df['Holding no'] = 0
-    k = 0 
-    progress_bar = st.progress(0)
-    for i in df['nsecode']:
-        Score, holding = HoldingScore(i)
-        # Convert the 'Holding score' and 'Holding no' columns to float data type
-        df['Holding score'] = df['Holding score'].astype(float)
-        df['Holding no'] = df['Holding no'].astype(float)
-
-        # Now you can assign the floating-point values without warnings
-        df.loc[k, 'Holding score'] = Score  # Assuming Score is a float
-        df.loc[k, 'Holding no'] = holding   # Assuming holding is a float
-
-        k+=1
-        progress_bar.progress(k)
-    df.fillna(0.0, inplace=True)
+            gf = process_button_click(stocks)
+            last_score = 0.0
+            print(f"error {stocks}")
+        df.loc[i, 'Score'] = last_score
+        i= i+1
+        time.sleep(2)
     return df
 
 df = get_stocks()
-df = csv_caller(df)
-# Buttons for downloading CSV and Excel
-st.write(df)
-st.sidebar.header('Download as:')
-if st.sidebar.button('CSV'):
-    download_csv()
-if st.sidebar.button('Excel'):
-    download_excel()
+df['nsecode'].drop_duplicates()
+df = Holding_Looper(df)
+df.to_csv("merged911.csv")
+ 
 
-st.sidebar.write('Know More: ')
-unique_values = df['nsecode'].unique()
-
-# Display buttons for each unique value
-for value in unique_values:
-    button_label = f'{value}'
-    if st.sidebar.button(button_label):
-        result = process_button_click(value)
-        st.write(result)
