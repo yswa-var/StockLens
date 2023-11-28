@@ -9,54 +9,18 @@ import pandas as pd
 import warnings
 import time
 import numpy as np
-from PIL import Image
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
-image = Image.open('image.jpg')
-st.image(image)
-def download_link(df, filename, text):
-    csv = df.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding
-    href = f'<a href="data:file/csv;base64,{b64}" download="{filename}.csv">{text}</a>'
-    return href
 
-# Display DataFrame in the sidebar
-def download_csv():
-    csv = df.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="data.csv">Download CSV file</a>'
-    st.markdown(href, unsafe_allow_html=True)
+# Open the image using Pillow (PIL)
+image = "https://raw.githubusercontent.com/bbmusa/StockLens/main/app/image.jpg"
 
-# Function to download as Excel
-def download_excel():
-    excel_buffer = io.BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Sheet1', index=False)
-    excel_data = excel_buffer.getvalue()
-    b64 = base64.b64encode(excel_data).decode()
-    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="data.xlsx">Download Excel file</a>'
-    st.markdown(href, unsafe_allow_html=True)
+# Display the image in Streamlit
+st.sidebar.image(image, width=400)
 
 def process_button_click(value):
     url = "https://www.screener.in/company/" + value +"/"
-    response = requests.get(url)
-
-    soup = bs(response.content, "html.parser")
-
-    quarterly_shp_section = soup.find('div', {'id': 'quarterly-shp'})
-
-    shareholding_table = quarterly_shp_section.find('table', {'class': 'data-table'})
-    shareholding_data = []
-    for row in shareholding_table.find_all('tr'):
-        cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
-        shareholding_data.append(cols)
-
-    df = pd.DataFrame(shareholding_data)
-    df = df.transpose()
-    df = df.drop(columns=[0])
-    df.columns = df.iloc[0]
-    df = df.iloc[1:]
+    st.link_button(value,url=url)
 
     return df
 
@@ -90,120 +54,64 @@ def get_stocks():
     #weekly
     cond = "( {cash} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) and ( {cash} ( latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 ) ) and ( {cash} ( latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and market cap >= 300 and latest close > 30 ) ) and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) ) ) "
     df3 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
+
+    #fire
+    cond = "( {cash} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) and ( {cash} ( latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 ) ) and ( {cash} ( latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and market cap >= 300 and latest close > 30 ) ) and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) ) ) "
+    df4 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
+
     # Convert Series to DataFrame
     df1 = df1.to_frame()
     df2 = df2.to_frame()
     df3 = df3.to_frame()
+    df4 = df4.to_frame()
 
     # Reset index to make the current index a column and create a proper index
     df1.reset_index(drop=True, inplace=True)
     df2.reset_index(drop=True, inplace=True)
     df3.reset_index(drop=True, inplace=True)
+    df4.reset_index(drop=True, inplace=True)
 
     # Add 'Cat' column
+    df4['Cat'] = "🔥"
     df1['Cat'] = "S"
     df2['Cat'] = "M"
     df3['Cat'] = "L"
+    
 
     # Concatenate DataFrames vertically
-    df = pd.concat([df1, df2, df3], axis=0)
+    df = pd.concat([df4, df1, df2, df3], axis=0)
 
     return df
 
-def get_shareholding(x):
-    url = "https://www.screener.in/company/" + x +"/"
-    response = requests.get(url)
 
-    soup = bs(response.content, "html.parser")
-
-    quarterly_shp_section = soup.find('div', {'id': 'quarterly-shp'})
-
-    shareholding_table = quarterly_shp_section.find('table', {'class': 'data-table'})
-    shareholding_data = []
-    for row in shareholding_table.find_all('tr'):
-        cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
-        shareholding_data.append(cols)
-
-    df = pd.DataFrame(shareholding_data)
-    time.sleep(4)
-    return df
-
-
-def HoldingScore(ticker):
-    try:
-        df = get_shareholding(ticker)
-        if len(df[0].to_numpy()) == 6:
-            df[0] = ["x","Promoter", "FII", "DII", "Retail","Share Holders"]
-        if len(df[0].to_numpy()) == 7:
-            df[0] = ["x","Promoter", "FII", "DII","Gov", "Retail","Share Holders"]
-        if len(df[0].to_numpy()) == 8:
-            df[0] = ["x","Promoter", "FII", "DII","Gov", "Retail","other","Share Holders"]
-        if len(df[0].to_numpy()) > 8:
-            df[0] = ["x","Promoter", "FII", "DII","Gov", "Retail","other","Share Holders",'xx']
-        
-        df = df.transpose()
-
-        df = df.drop(columns=[0])
-        df.columns = df.iloc[0]
-        df = df.iloc[1:]
-
-        df.drop([1, 2, 3, 4, 5, 6, 7, 8], inplace=True)
-        # Convert percentage strings to float
-        df['Promoter'] = df['Promoter'].str.rstrip('%').astype(float)
-        df['FII'] = df['FII'].str.rstrip('%').astype(float)
-        df['DII'] = df['DII'].str.rstrip('%').astype(float)
-        df['Retail'] = df['Retail'].str.rstrip('%').astype(float)
-        try:
-            df['Gov'] = df['Gov'].str.rstrip('%').astype(float)
-        except:
-            pass
-        # Remove commas and convert 'share holders' to int
-        df['Share Holders'] = df['Share Holders'].str.replace(',', '').astype(int)
-        score = round((np.diff(df['FII'].to_numpy()) / df['FII'].to_numpy()[:-1]).sum() + (np.diff(df['DII'].to_numpy()) / df['DII'].to_numpy()[:-1]).sum() + (np.diff(df['Promoter'].to_numpy()) / df['Promoter'].to_numpy()[:-1]).sum() - (np.diff(df['Retail'].to_numpy()) / df['Retail'].to_numpy()[:-1]).sum(),5)
-        holding = round(-(np.diff(df['Share Holders'].to_numpy()) / df['Share Holders'].to_numpy()[:-1]).sum(),3)
-        return score, holding
-    except Exception as e:
-        print('error '+ticker)
-        print(e)
-        return 0, 0
-        
-def csv_caller(df):
-    df["Holding score"] = 0
-    df['Holding no'] = 0
-    k = 0 
-    progress_bar = st.progress(0)
-    for i in df['nsecode']:
-        Score, holding = HoldingScore(i)
-        # Convert the 'Holding score' and 'Holding no' columns to float data type
-        df['Holding score'] = df['Holding score'].astype(float)
-        df['Holding no'] = df['Holding no'].astype(float)
-
-        # Now you can assign the floating-point values without warnings
-        df.loc[k, 'Holding score'] = Score  # Assuming Score is a float
-        df.loc[k, 'Holding no'] = holding   # Assuming holding is a float
-
-        k+=1
-        progress_bar.progress(k)
-    df.fillna(0.0, inplace=True)
-    return df
+# try:
+#     gf = gf()
+#     st.write(gf)
+#     string = f"### {today_date},"
+#     for i in gf['nsecode']:
+#         string = string + "NSE:" + i + " , "
+#     st.code(string)
+# except:
+#     st.text("X🔥")
 
 df = get_stocks()
-df = csv_caller(df)
+
 # Buttons for downloading CSV and Excel
 st.write(df)
-st.sidebar.header('Download as:')
-if st.sidebar.button('CSV'):
-    download_csv()
-if st.sidebar.button('Excel'):
-    download_excel()
+string2 = f"### {today_date}, "
+for i in df['nsecode']:
+    string2 = string2 + "NSE:" + i + " ,"
+st.code(string2)
+# df = csv_caller(df)
+# st.header('"Things you own end up owning you!"')
 
-st.sidebar.write('Know More: ')
+
 unique_values = df['nsecode'].unique()
 
+
 # Display buttons for each unique value
-for value in unique_values:
-    button_label = f'{value}'
-    if st.sidebar.button(button_label):
-        result = process_button_click(value)
-        st.write(result)
+screen = st.sidebar.text_input("Screener","GAIL")
+st.sidebar.link_button("Search on Screener", f"https://www.screener.in/company/{screen}/")
+st.sidebar.write('Know Me')
+st.sidebar.link_button("Linkedin", url="https://www.linkedin.com/in/yashaswa-varshney")
+st.sidebar.link_button("Github", "https://github.com/bbmusa")

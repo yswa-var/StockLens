@@ -13,6 +13,11 @@ import numpy as np
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
 
+# Open the image using Pillow (PIL)
+image = "https://raw.githubusercontent.com/bbmusa/StockLens/main/app/image.jpg"
+
+# Display the image in Streamlit
+st.image(image, width=600)
 def format_nse_codes(codes):
     """
     This function takes a list of NSE codes and returns a string formatted with today's date
@@ -110,6 +115,41 @@ def process_button_click(value):
     st.link_button(value, url)
     fig = px.bar(df, x=df.index, y='Score', title='Score Bar Graph')
     st.plotly_chart(fig)
+
+    financial_data = {}
+
+    # Find the 'company-ratios' div and extract each financial data point
+    company_ratios = soup.find('div', class_='company-ratios')
+    if company_ratios:
+        for li in company_ratios.find_all('li', {'data-source': 'default'}):
+            name = li.find('span', class_='name').get_text(strip=True)
+            value = li.find('span', class_='value').get_text(strip=True)
+            financial_data[name] = value
+    else:
+        print("Company Ratios section not found in the HTML content.")
+    
+    st.title("Basic Data")
+    st.write(financial_data)
+    #-----------------
+    table = soup.find('table')
+
+    if not table:
+        return "Peer Comparison table not found"
+
+    # Extract table headers
+    headers = [header.text.strip() for header in table.find_all('th')]
+
+    # Extract table rows
+    rows = []
+    for row in table.find_all('tr')[1:]:  # Skipping the header row
+        cols = row.find_all('td')
+        cols = [ele.text.strip() for ele in cols]
+        rows.append(cols)
+
+    # Convert to DataFrame for easy manipulation
+    balanceSheet = pd.DataFrame(rows, columns=headers)
+    st.title("Balance Sheet")
+    st.dataframe(balanceSheet)
     return df
 
 
@@ -175,9 +215,9 @@ df = get_stocks()
 if st.button('Refresh Data'):
     df = refresh_data()
 
-st.title('HotChick Stocks')
 
 c1, c2 = st.columns([1, 2])
+
 c1.write(df)
 tradingview = format_nse_codes(df['nsecode'])
 c2.code(tradingview)
@@ -197,7 +237,35 @@ for value in unique_values:
     button_label = f'{value}'
     if st.sidebar.button(button_label):
         result = process_button_click(value)
+        st.title("ShareHolding")
         st.write(result)
 
 
+#------------------------------
 
+# def scrape_financial_data(url):
+#     """
+#     Scrape financial data from HTML content of a Screener.in company page.
+
+#     :param html_content: HTML content of the page
+#     :return: Dictionary containing the financial data
+#     """
+#     response = requests.get(url)
+#     soup = BeautifulSoup(response.content, 'html.parser')
+#     financial_data = {}
+
+#     # Find the 'company-ratios' div and extract each financial data point
+#     company_ratios = soup.find('div', class_='company-ratios')
+#     if company_ratios:
+#         for li in company_ratios.find_all('li', {'data-source': 'default'}):
+#             name = li.find('span', class_='name').get_text(strip=True)
+#             value = li.find('span', class_='value').get_text(strip=True)
+#             financial_data[name] = value
+#     else:
+#         print("Company Ratios section not found in the HTML content.")
+
+#     return financial_data
+
+# url = "https://www.screener.in/company/GAIL/"
+# data = scrape_financial_data(url)
+# st.write(data)
