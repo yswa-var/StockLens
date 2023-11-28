@@ -17,7 +17,7 @@ np.seterr(divide='ignore', invalid='ignore')
 image = "https://raw.githubusercontent.com/bbmusa/StockLens/main/app/image.jpg"
 
 # Display the image in Streamlit
-st.image(image, width=600)
+st.image(image, width=200)
 def format_nse_codes(codes):
     """
     This function takes a list of NSE codes and returns a string formatted with today's date
