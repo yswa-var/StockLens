@@ -10,14 +10,11 @@ import warnings
 import plotly.express as px
 import time
 import numpy as np
+
 today_date = datetime.today().strftime('%d-%m-%Y')
 np.seterr(divide='ignore', invalid='ignore')
 
-# Open the image using Pillow (PIL)
-image = "https://raw.githubusercontent.com/bbmusa/StockLens/main/app/image.jpg"
 
-# Display the image in Streamlit
-st.image(image, width=200)
 def format_nse_codes(codes):
     """
     This function takes a list of NSE codes and returns a string formatted with today's date
@@ -31,8 +28,9 @@ def format_nse_codes(codes):
 
     # Combine the date and formatted NSE codes
     formatted_string = f"### {today_date}, {formatted_codes}"
-    
+
     return formatted_string
+
 
 def download_link(df, filename, text):
     csv = df.to_csv(index=False)
@@ -40,12 +38,14 @@ def download_link(df, filename, text):
     href = f'<a href="data:file/csv;base64,{b64}" download="{filename}.csv">{text}</a>'
     return href
 
+
 # Display DataFrame in the sidebar
 def download_csv():
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="data.csv">Download CSV file</a>'
     st.markdown(href, unsafe_allow_html=True)
+
 
 # Function to download as Excel
 def download_excel():
@@ -57,8 +57,9 @@ def download_excel():
     href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="data.xlsx">Download Excel file</a>'
     st.markdown(href, unsafe_allow_html=True)
 
+
 def process_button_click(value):
-    url = "https://www.screener.in/company/" + value +"/"
+    url = "https://www.screener.in/company/" + value + "/"
 
     response = requests.get(url)
 
@@ -111,7 +112,7 @@ def process_button_click(value):
     # You may want to fill NaN values with 0 or leave them as is, depending on your requirement
     df.fillna(0, inplace=True)
 
-    df["Score"] = (df['Promoter % Change']+df['DII % Change']+df['FII % Change'])-df['Public % Change'] 
+    df["Score"] = (df['Promoter % Change'] + df['DII % Change'] + df['FII % Change']) - df['Public % Change']
     st.link_button(value, url)
     fig = px.bar(df, x=df.index, y='Score', title='Score Bar Graph')
     st.plotly_chart(fig)
@@ -127,10 +128,10 @@ def process_button_click(value):
             financial_data[name] = value
     else:
         print("Company Ratios section not found in the HTML content.")
-    
+
     st.title("Basic Data")
     st.write(financial_data)
-    #-----------------
+    # -----------------
     table = soup.find('table')
 
     if not table:
@@ -154,7 +155,7 @@ def process_button_click(value):
 
 
 def chartink_eng(cond=None):
-    url="https://chartink.com/screener/process"
+    url = "https://chartink.com/screener/process"
 
     if cond is None:
         return
@@ -170,17 +171,18 @@ def chartink_eng(cond=None):
         scan = pd.DataFrame(data["data"])
         return scan
 
+
 def get_stocks():
-    #short term
-    cond = "( {cash} ( latest ema ( latest close , 21 ) >= latest ema ( latest close , 50 ) and latest ema ( close,10 ) / latest ema ( close,21 ) <= 1.03 and latest ema ( close,10 ) / latest ema ( close,21 ) > 1 and latest ema ( close,21 ) / latest ema ( close,30 ) <= 1.03 and latest ema ( close,21 ) / latest ema ( close,30 ) > 1 and latest ema ( close,30 ) / latest ema ( close,50 ) <= 1.03 and latest ema ( close,30 ) / latest ema ( close,50 ) > 1 and latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 and latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and latest close > 30 and market cap >= 300 and latest ema ( latest close , 10 ) > latest ema ( latest close , 21 ) and latest ema ( latest close , 21 ) > latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) > latest ema ( latest close , 100 ) and latest close > latest ema ( latest close , 50 ) and quarterly indian public percentage <= 1 quarter ago indian public percentage and 1 quarter ago indian public percentage <= 2 quarter ago indian public percentage and 2 quarter ago indian public percentage <= 3 quarter ago indian public percentage and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) ) ) "
+    # short term
+    cond = "( {cash} ( weekly ema ( weekly close , 21 ) >= weekly ema ( weekly close , 50 ) and weekly ema ( close,10 ) / weekly ema ( close,21 ) <= 1.03 and weekly ema ( close,10 ) / weekly ema ( close,21 ) > 1 and weekly ema ( close,21 ) / weekly ema ( close,30 ) <= 1.03 and weekly ema ( close,21 ) / weekly ema ( close,30 ) > 1 and weekly ema ( close,30 ) / weekly ema ( close,50 ) <= 1.03 and weekly ema ( close,30 ) / weekly ema ( close,50 ) > 1 and latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and market cap >= 300 and latest volume > latest sma ( latest volume , 20 ) ) ) "
     df1 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
 
-    #mid
-    cond = "( {cash} ( weekly ema ( weekly close , 21 ) >= weekly ema ( weekly close , 50 ) and weekly ema ( close,10 ) / weekly ema ( close,21 ) <= 1.03 and weekly ema ( close,10 ) / weekly ema ( close,21 ) > 1 and weekly ema ( close,21 ) / weekly ema ( close,30 ) <= 1.03 and weekly ema ( close,21 ) / weekly ema ( close,30 ) > 1 and weekly ema ( close,30 ) / weekly ema ( close,50 ) <= 1.03 and weekly ema ( close,30 ) / weekly ema ( close,50 ) > 1 and latest close > 30 and latest sma ( latest volume , 50 ) > 3000 and market cap >= 300 and latest close > 30 and weekly ema ( weekly close , 10 ) > weekly ema ( weekly close , 21 ) and weekly ema ( weekly close , 21 ) > weekly ema ( weekly close , 50 ) and weekly ema ( weekly close , 50 ) > weekly ema ( weekly close , 100 ) and weekly close > weekly ema ( weekly close , 50 ) and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) and latest volume > latest sma ( latest volume , 20 ) and quarterly indian public percentage <= 1 quarter ago indian public percentage and 1 quarter ago indian public percentage <= 2 quarter ago indian public percentage and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) ) ) "
+    # mid
+    cond = "( {cash} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 and market cap >= 300 ) ) "
     df2 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
 
-    #weekly
-    cond = "( {cash} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 and ( {cash} ( quarterly indian promoter and group percentage > 1 quarter ago indian promoter and group percentage or 1 quarter ago indian promoter and group percentage > 2 quarter ago indian promoter and group percentage or 2 quarter ago indian promoter and group percentage > 3 quarter ago indian promoter and group percentage or 3 quarter ago indian promoter and group percentage > 4 quarters ago indian promoter and group percentage or 4 quarters ago indian promoter and group percentage > 5 quarters ago indian promoter and group percentage ) ) and ( {cash} ( latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 ) ) and ( {cash} ( latest close > 30 and latest sma ( latest volume , 50 ) > 10000 and market cap >= 300 and latest close > 30 ) ) and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) ) ) "
+    # weekly
+    cond = "( {cash} ( latest ema ( latest close , 21 ) >= latest ema ( latest close , 50 ) and latest ema ( close,10 ) / latest ema ( close,21 ) <= 1.03 and latest ema ( close,10 ) / latest ema ( close,21 ) > 1 and latest ema ( close,21 ) / latest ema ( close,30 ) <= 1.03 and latest ema ( close,21 ) / latest ema ( close,30 ) > 1 and latest ema ( close,30 ) / latest ema ( close,50 ) <= 1.03 and latest ema ( close,30 ) / latest ema ( close,50 ) > 1 and latest close >= weekly max ( 52 , weekly high ) * 0.75 and latest close >= weekly max ( 52 , weekly low ) * 1 and latest sma ( latest volume , 50 ) > 1000 and weekly ema ( weekly close , 50 ) >= weekly ema ( weekly close , 100 ) ) ) "
     df3 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
     # Convert Series to DataFrame
     df1 = df1.to_frame()
@@ -199,28 +201,83 @@ def get_stocks():
 
     # Concatenate DataFrames vertically
     df = pd.concat([df1, df2, df3], axis=0)
-    
+
     return df
- 
+
+
+def FII_buying():
+    cond = "( {cash} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 and market cap >= 300 and quarterly foreign institutional investors percentage > 1 quarter ago foreign institutional investors percentage and quarterly foreign institutional investors percentage > quarterly indian public percentage ) ) "
+    df1 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
+
+    df1 = df1.to_frame()
+
+    df1.reset_index(drop=True, inplace=True)
+    return df1
+
+
+def nfo_stocks():
+    cond = "( {33489} ( latest ema ( latest close , 20 ) >= latest ema ( latest close , 50 ) and latest ema ( latest close , 50 ) >= latest ema ( latest close , 75 ) and latest ema ( latest close , 75 ) >= latest ema ( latest close , 100 ) and latest ema ( latest close , 100 ) >= latest ema ( latest close , 200 ) and latest ema ( close,20 ) / latest ema ( close,50 ) < 1.03 and latest ema ( close,20 ) / latest ema ( close,50 ) > 1 and latest ema ( close,50 ) / latest ema ( close,75 ) < 1.03 and latest ema ( close,50 ) / latest ema ( close,75 ) > 1 and latest ema ( close,75 ) / latest ema ( close,100 ) < 1.03 and latest ema ( close,75 ) / latest ema ( close,100 ) > 1 ) ) "
+    df1 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
+
+    df1 = df1.to_frame()
+
+    df1.reset_index(drop=True, inplace=True)
+    return df1
+
+
+def sell_vs_buy():
+    cond = "( {cash} ( latest ema ( close,7 ) / latest ema ( close,21 ) > latest ema ( latest close , 27 ) / latest ema ( latest close , 77 ) and 1 day ago  ema ( close,7 )/ 1 day ago  ema ( close,21 )<= 1 day ago  ema ( latest close , 27 )/ 1 day ago  ema ( latest close , 77 ) and latest sell orders quantity <= latest buy orders quantity and quarterly total shareholders < 1 quarter ago total shareholders and quarterly indian public percentage <= 1 quarter ago indian public percentage and latest ema ( close,7 ) / latest ema ( close,21 ) > 0.98 and latest ema ( close,27 ) / latest ema ( close,77 ) > 0.98 ) ) "
+    df1 = pd.DataFrame(chartink_eng(cond=cond))['nsecode']
+
+    df1 = df1.to_frame()
+
+    df1.reset_index(drop=True, inplace=True)
+    return df1
+
+
 # Define a function to refresh the data
 def refresh_data():
     st.write("Refreshing data...")
     df = get_stocks()
-    return df
+    df2 = FII_buying()
+    df3 = nfo_stocks()
+    df4 = nfo_stocks()
+    return df, df2, df3, df4
+
 
 # Initial data retrieval
+st.header("sand pile zones")
 df = get_stocks()
+df2 = FII_buying()
+df3 = nfo_stocks()
+df4 = sell_vs_buy()
 
 # Button to trigger data refresh
 if st.button('Refresh Data'):
-    df = refresh_data()
-
+    df, df2, df3, df4 = refresh_data()
 
 c1, c2 = st.columns([1, 2])
+c1.write(df2)
+tw_codes = format_nse_codes(df2['nsecode'])
+c2.code(tw_codes)
 
-c1.write(df)
-tradingview = format_nse_codes(df['nsecode'])
-c2.code(tradingview)
+st.header("fii buying qtly and sand zones")
+a1, a2 = st.columns([1, 2])
+a1.write(df2)
+tw_codes2 = format_nse_codes(df2['nsecode'])
+a2.code(tw_codes2)
+
+st.header("nfo sand zones")
+b1, b2 = st.columns([1, 2])
+b1.write(df3)
+tw_codes3 = format_nse_codes(df3['nsecode'])
+b2.code(tw_codes2)
+
+st.header("Sell vs Buy theory")
+d1, d2 = st.columns([1, 2])
+d1.write(df4)
+tw_codes4 = format_nse_codes(df4['nsecode'])
+d2.code(tw_codes4)
 
 # Rest of your code...
 st.sidebar.header('Download as:')
@@ -240,8 +297,7 @@ for value in unique_values:
         st.title("ShareHolding")
         st.write(result)
 
-
-#------------------------------
+# ------------------------------
 
 # def scrape_financial_data(url):
 #     """
